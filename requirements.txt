@@ -1,0 +1,28 @@
+# OfflineVoiceLogger - 必要なライブラリ
+# Python 3.9以上を推奨
+
+# 音声文字起こし
+faster-whisper>=1.2.1
+av>=11.0.0  # faster-whisperの依存関係（Windowsでは事前ビルドホイールが利用可能）
+
+# 音声キャプチャ
+sounddevice==0.4.6
+
+# データ処理
+numpy>=1.24.3
+
+# システムリソース監視
+psutil==5.9.5
+
+# GUI (PyQt5)
+PyQt5==5.15.9
+PyQt5-Qt5==5.15.2
+
+# セキュリティ (オプション機能用)
+cryptography==41.0.3
+
+# EXE化
+pyinstaller==6.1.0
+
+# ユーティリティ
+python-dotenv==1.0.0

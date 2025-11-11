@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -u:*)",
+      "Bash(cp:*)",
+      "Bash(python:*)",
+      "Bash(wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /value)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
