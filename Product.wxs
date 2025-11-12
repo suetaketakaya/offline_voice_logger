@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?define ProductVersion="1.0.0" ?>
+  <?define ProductName="OfflineVoiceLogger" ?>
+  <?define Manufacturer="OfflineVoiceLogger Project" ?>
+  <?define UpgradeCode="68a8b756-fa1c-430e-a11a-43a0ede6e945" ?>
+
+  <Product Id="*"
+           Name="$(var.ProductName)"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="500"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Platform="x64"
+             Description="$(var.ProductName) Installer"
+             Comments="完全オフラインで動作する音声文字起こしアプリケーション" />
+
+    <!-- アップグレード設定 -->
+    <MajorUpgrade DowngradeErrorMessage="新しいバージョンが既にインストールされています。" />
+
+    <!-- メディア設定 -->
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- アイコン設定 -->
+    <Icon Id="AppIcon.ico" SourceFile="app_icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+
+    <!-- プログラムと機能での表示 -->
+    <Property Id="ARPHELPLINK" Value="https://github.com/suetaketakaya/offline_voice_logger" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/suetaketakaya/offline_voice_logger" />
+    <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />
+
+    <!-- システム要件チェック -->
+    <Condition Message="このアプリケーションはWindows 10以降が必要です。">
+      <![CDATA[Installed OR (VersionNT >= 603)]]>
+    </Condition>
+
+    <Condition Message="このアプリケーションは64ビットWindowsが必要です。">
+      <![CDATA[Installed OR VersionNT64]]>
+    </Condition>
+
+    <!-- ディレクトリ構造 -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="$(var.ProductName)" />
+      </Directory>
+
+      <!-- スタートメニュー -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="$(var.ProductName)"/>
+      </Directory>
+
+      <!-- デスクトップ -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <!-- コンポーネントグループ参照 -->
+    <Feature Id="ProductFeature"
+             Title="$(var.ProductName)"
+             Level="1"
+             Description="メインアプリケーション">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ModelFiles" />
+      <ComponentRef Id="ApplicationShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- UI設定 -->
+    <UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <!-- ライセンス設定 -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <!-- カスタムダイアログ -->
+    <UI>
+      <Publish Dialog="ExitDialog"
+               Control="Finish"
+               Event="DoAction"
+               Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
+
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT"
+              Value="$(var.ProductName)を起動する" />
+
+    <Property Id="WixShellExecTarget" Value="[#OfflineVoiceLogger.exe]" />
+    <CustomAction Id="LaunchApplication"
+                  BinaryKey="WixCA"
+                  DllEntry="WixShellExec"
+                  Impersonate="yes" />
+  </Product>
+
+  <!-- フラグメント: アプリケーションコンポーネント -->
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <!-- メインEXE -->
+      <Component Id="MainExecutable" Guid="*" Win64="yes">
+        <File Id="OfflineVoiceLogger.exe"
+              Source="dist\OfflineVoiceLogger\OfflineVoiceLogger.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- すべてのファイル（HarvestしたComponent定義をここに追加） -->
+      <!-- heat.exeで自動生成することを推奨 -->
+    </ComponentGroup>
+
+    <!-- スタートメニューショートカット -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="*" Win64="yes">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="$(var.ProductName)"
+                  Description="完全オフラインで動作する音声文字起こしアプリケーション"
+                  Target="[INSTALLFOLDER]OfflineVoiceLogger.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon.ico" />
+        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU"
+                       Key="Software\$(var.Manufacturer)\$(var.ProductName)"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- デスクトップショートカット -->
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="*" Win64="yes">
+        <Shortcut Id="ApplicationDesktopShortcut"
+                  Name="$(var.ProductName)"
+                  Description="完全オフラインで動作する音声文字起こしアプリケーション"
+                  Target="[INSTALLFOLDER]OfflineVoiceLogger.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon.ico" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\$(var.Manufacturer)\$(var.ProductName)"
+                       Name="desktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+
+  <!-- フラグメント: モデルファイル -->
+  <Fragment>
+    <ComponentGroup Id="ModelFiles" Directory="INSTALLFOLDER">
+      <!-- モデルディレクトリ配下のファイル -->
+      <!-- heat.exeで自動生成することを推奨 -->
+      <Component Id="ModelDirectory" Guid="*" Win64="yes">
+        <CreateFolder Directory="INSTALLFOLDER">
+          <util:PermissionEx User="Users" GenericAll="yes" />
+        </CreateFolder>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

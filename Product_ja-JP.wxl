@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="ja-JP" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <!-- 製品情報 -->
+  <String Id="ProductName">OfflineVoiceLogger</String>
+  <String Id="ProductDescription">完全オフラインで動作する音声文字起こしアプリケーション</String>
+  <String Id="Manufacturer">OfflineVoiceLogger Project</String>
+
+  <!-- インストールダイアログ -->
+  <String Id="WelcomeMessage">OfflineVoiceLoggerセットアップウィザードへようこそ</String>
+  <String Id="LicenseAgreement">ライセンス契約</String>
+  <String Id="InstallLocation">インストール先</String>
+  <String Id="ReadyToInstall">インストール準備完了</String>
+  <String Id="Installing">インストール中...</String>
+  <String Id="Completed">インストール完了</String>
+
+  <!-- エラーメッセージ -->
+  <String Id="RequiresWin10">このアプリケーションはWindows 10以降が必要です。</String>
+  <String Id="Requires64Bit">このアプリケーションは64ビットWindowsが必要です。</String>
+  <String Id="RequiresDiskSpace">インストールには少なくとも5GBの空き容量が必要です。</String>
+
+  <!-- ボタン -->
+  <String Id="ButtonNext">次へ(&amp;N) ></String>
+  <String Id="ButtonBack">&lt; 戻る(&amp;B)</String>
+  <String Id="ButtonInstall">インストール(&amp;I)</String>
+  <String Id="ButtonFinish">完了(&amp;F)</String>
+  <String Id="ButtonCancel">キャンセル</String>
+</WixLocalization>
