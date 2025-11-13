@@ -9,6 +9,10 @@
 #define MyAppExeName "OfflineVoiceLogger.exe"
 
 [Setup]
+; GitHub Releases配布用：分割版（4.2GB制限のため）
+DiskSpanning=yes
+DiskSliceSize=2000000000
+
 ; アプリケーション情報
 AppId={{68a8b756-fa1c-430e-a11a-43a0ede6e945}}
 AppName={#MyAppName}

@@ -75,6 +75,9 @@ class OfflineVoiceLoggerApp:
         self.model_name = self.config_mgr.get('Transcription', 'model', 'medium')  # 現在のモデル名
         print("        -> 文字起こしモジュールOK")
 
+        # 録音開始時刻（実時刻表示用）
+        self.recording_start_time = None
+
         # ファイル管理
         print("   3-5. ファイル管理初期化...")
         save_dir = self.config_mgr.get('Files', 'save_directory')
@@ -492,6 +495,10 @@ class OfflineVoiceLoggerApp:
             self.transcription_segments.clear()
             self.window.clear_transcription_text()
 
+            # 録音開始時刻を記録（実時刻表示用）
+            from datetime import datetime
+            self.recording_start_time = datetime.now()
+
             # ワーカースレッドを先に起動
             self.transcription_thread = threading.Thread(
                 target=self.transcription_worker,
@@ -705,11 +712,19 @@ class OfflineVoiceLoggerApp:
             logger.error(f"結果チェックエラー: {e}")
 
     def _format_timestamp(self, seconds: float) -> str:
-        """タイムスタンプフォーマット"""
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        secs = int(seconds % 60)
-        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        """タイムスタンプフォーマット - 実時刻を表示"""
+        from datetime import datetime, timedelta
+
+        if self.recording_start_time is None:
+            # 録音開始時刻が未設定の場合は経過時間で表示
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            secs = int(seconds % 60)
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+        # 録音開始時刻 + 経過秒数 = 実時刻
+        actual_time = self.recording_start_time + timedelta(seconds=seconds)
+        return actual_time.strftime("%H:%M:%S")
 
     def save_file(self):
         """ファイル保存"""
