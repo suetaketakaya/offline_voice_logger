@@ -376,12 +376,16 @@ class OfflineVoiceLoggerApp:
         print("   4-5. タイマー設定...")
         self.audio_level_timer = QTimer()
         self.audio_level_timer.timeout.connect(self.update_audio_level)
+        self.audio_level_timer.setTimerType(0)  # Qt.PreciseTimer (0) - 最高精度
 
         self.transcription_check_timer = QTimer()
         self.transcription_check_timer.timeout.connect(self.check_transcription_results)
+        self.transcription_check_timer.setTimerType(0)  # Qt.PreciseTimer (0) - 最高精度
+
         # UI同期タイマー（起動中常に軽量に状態を整える）
         self.ui_sync_timer = QTimer()
         self.ui_sync_timer.timeout.connect(self._sync_ui_state)
+        self.ui_sync_timer.setTimerType(0)  # Qt.PreciseTimer (0) - 最高精度
         self.ui_sync_timer.start(1000)
         print("        -> タイマー設定OK")
 
@@ -718,10 +722,23 @@ class OfflineVoiceLoggerApp:
 
                 # セグメントを追加（重複を防ぐ）
                 new_segments = []
+
+                # ハルシネーションでよく出現する定型フレーズのブラックリスト
+                hallucination_blacklist = [
+                    "ご視聴ありがとうございました",
+                    "ご視聴ありがとうございます",
+                    "チャンネル登録",
+                    "高評価",
+                    "コメント",
+                    "subscribe",
+                    "like and subscribe",
+                ]
+
                 for segment in result['segments']:
                     # 重複チェック: 同じテキストを除外
                     # 1. テキストが完全一致する場合は時刻に関わらず除外
                     # 2. 最近30秒以内に同じテキストがあれば除外（ハルシネーション対策）
+                    # 3. ブラックリストのフレーズを含む場合は除外
                     is_duplicate = False
                     segment_text = segment['text'].strip()
 
@@ -729,6 +746,14 @@ class OfflineVoiceLoggerApp:
                     if not segment_text or len(segment_text) < 2:
                         is_duplicate = True
                         logger.debug(f"空または短すぎるセグメントをスキップ")
+
+                    # ブラックリストチェック
+                    if not is_duplicate:
+                        for blacklisted_phrase in hallucination_blacklist:
+                            if blacklisted_phrase in segment_text:
+                                is_duplicate = True
+                                logger.debug(f"ブラックリストフレーズを含むためスキップ: {segment_text[:30]}...")
+                                break
 
                     if not is_duplicate:
                         for existing in self.transcription_segments:
@@ -861,6 +886,16 @@ def main():
         print("=" * 60)
         print("OfflineVoiceLogger 起動開始")
         print("=" * 60)
+
+        # Windowsプロセス優先度を上げる（バックグラウンドでも正常動作）
+        try:
+            import psutil
+            import os
+            p = psutil.Process(os.getpid())
+            p.nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS)  # 優先度を「通常以上」に設定
+            print("0. プロセス優先度を設定: ABOVE_NORMAL")
+        except Exception as e:
+            print(f"   -> プロセス優先度の設定をスキップ: {e}")
 
         # ロガー設定
         print("1. ロガー初期化中...")

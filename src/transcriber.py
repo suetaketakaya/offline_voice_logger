@@ -197,12 +197,8 @@ class Transcriber:
             # VADフィルターを無効化（onnxruntimeのDLL問題を回避）
             # 精度向上のためのパラメータ設定
 
-            # 言語に応じたinitial_promptを設定（認識精度向上）
-            # 注意: プロンプトは指示文ではなく、自然な文章例を使用してハルシネーションを防ぐ
-            if language == 'ja':
-                initial_prompt = "今日は良い天気ですね。会議は10時から始まります。"
-            else:
-                initial_prompt = "Hello, how are you today? The meeting starts at ten."
+            # ハルシネーション抑制のため、initial_promptは使用しない
+            # プロンプトを与えると、それ自体がハルシネーションの原因になる
 
             transcribe_params = {
                 'language': language,
@@ -214,7 +210,7 @@ class Transcriber:
                 'compression_ratio_threshold': 2.4,  # ハルシネーション検出の閾値
                 'log_prob_threshold': -1.0,  # 低確率セグメントの閾値
                 'no_speech_threshold': 0.8,  # 無音判定の閾値（0.6→0.8に上げて厳しく）
-                'initial_prompt': initial_prompt,  # 言語コンテキストを提供（自然な文章例）
+                'initial_prompt': None,  # プロンプトなし（ハルシネーション防止）
                 'word_timestamps': False,  # 単語レベルのタイムスタンプは不要
             }
 
