@@ -198,22 +198,23 @@ class Transcriber:
             # 精度向上のためのパラメータ設定
 
             # 言語に応じたinitial_promptを設定（認識精度向上）
+            # 注意: プロンプトは指示文ではなく、自然な文章例を使用してハルシネーションを防ぐ
             if language == 'ja':
-                initial_prompt = "これは日本語の音声です。正確に文字起こしをしてください。"
+                initial_prompt = "今日は良い天気ですね。会議は10時から始まります。"
             else:
-                initial_prompt = "This is English audio. Please transcribe accurately."
+                initial_prompt = "Hello, how are you today? The meeting starts at ten."
 
             transcribe_params = {
                 'language': language,
                 'vad_filter': False,  # VADフィルター無効
-                'beam_size': 10,  # ビームサイズを10に増やして精度向上（デフォルト: 5）
+                'beam_size': 5,  # ビームサイズ（デフォルト: 5）
                 'best_of': 5,  # 5つの候補から最良のものを選択
-                'temperature': 0.2,  # 0.0→0.2に変更（より自然な認識）
+                'temperature': 0.0,  # 確定的な認識（ハルシネーション抑制）
                 'condition_on_previous_text': True,  # 前のテキストを条件として使用
                 'compression_ratio_threshold': 2.4,  # ハルシネーション検出の閾値
                 'log_prob_threshold': -1.0,  # 低確率セグメントの閾値
                 'no_speech_threshold': 0.6,  # 無音判定の閾値
-                'initial_prompt': initial_prompt,  # 言語コンテキストを提供
+                'initial_prompt': initial_prompt,  # 言語コンテキストを提供（自然な文章例）
                 'word_timestamps': False,  # 単語レベルのタイムスタンプは不要
             }
 

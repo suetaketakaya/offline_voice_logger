@@ -717,23 +717,36 @@ class OfflineVoiceLoggerApp:
                 result = self.result_queue.get_nowait()
 
                 # セグメントを追加（重複を防ぐ）
+                new_segments = []
                 for segment in result['segments']:
                     # 重複チェック: 同じテキストと時刻のセグメントを除外
                     is_duplicate = False
                     for existing in self.transcription_segments:
-                        # テキストが同じで、時刻が0.5秒以内の差の場合は重複とみなす
+                        # テキストが同じで、時刻が1.0秒以内の差の場合は重複とみなす
                         if (existing['text'].strip() == segment['text'].strip() and
-                            abs(existing['start'] - segment['start']) < 0.5):
+                            abs(existing['start'] - segment['start']) < 1.0):
                             is_duplicate = True
                             logger.debug(f"重複セグメントをスキップ: {segment['text'][:30]}...")
                             break
 
+                    # さらに、今回追加する新規セグメント内でも重複チェック
+                    for new_seg in new_segments:
+                        if (new_seg['text'].strip() == segment['text'].strip() and
+                            abs(new_seg['start'] - segment['start']) < 1.0):
+                            is_duplicate = True
+                            logger.debug(f"新規セグメント内で重複をスキップ: {segment['text'][:30]}...")
+                            break
+
                     if not is_duplicate:
+                        new_segments.append(segment)
                         self.transcription_segments.append(segment)
 
-                        # GUI更新
-                        timestamp = self._format_timestamp(segment['start'])
-                        self.window.add_transcription_text(segment['text'], timestamp)
+                # 新規セグメントをタイムスタンプ順にソートしてGUI表示
+                new_segments.sort(key=lambda x: x['start'])
+                for segment in new_segments:
+                    # GUI更新
+                    timestamp = self._format_timestamp(segment['start'])
+                    self.window.add_transcription_text(segment['text'], timestamp)
 
         except queue.Empty:
             pass
