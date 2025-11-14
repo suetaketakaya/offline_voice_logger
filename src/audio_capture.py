@@ -43,8 +43,8 @@ class AudioCapture:
         self.channels = channels
         self.buffer_size_seconds = buffer_size_seconds
         self.max_buffer_samples = sample_rate * buffer_size_seconds
-        # 最小バッファサイズ（5秒）- これ以上貯まったら文字起こし開始
-        self.min_buffer_samples = sample_rate * 5
+        # 最小バッファサイズ（6秒）- これ以上貯まったら文字起こし開始
+        self.min_buffer_samples = sample_rate * 6
 
         # 音声バッファ (dequeで効率的なFIFO)
         self.audio_buffer = collections.deque(maxlen=self.max_buffer_samples)

@@ -96,7 +96,7 @@ class OfflineVoiceLoggerApp:
         self.audio_thread = None
         self.transcription_thread = None
         self.is_running = False
-        self.audio_queue = queue.Queue(maxsize=10)
+        self.audio_queue = queue.Queue(maxsize=20)  # 10→20に増やしてオーバーフロー対策
         self.result_queue = queue.Queue()
 
         # タイマー
