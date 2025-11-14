@@ -196,19 +196,26 @@ class Transcriber:
             # faster-whisperで文字起こし
             # VADフィルターを無効化（onnxruntimeのDLL問題を回避）
             # 精度向上のためのパラメータ設定
+
+            # 言語に応じたinitial_promptを設定（認識精度向上）
+            if language == 'ja':
+                initial_prompt = "これは日本語の音声です。正確に文字起こしをしてください。"
+            else:
+                initial_prompt = "This is English audio. Please transcribe accurately."
+
             transcribe_params = {
                 'language': language,
                 'vad_filter': False,  # VADフィルター無効
                 'beam_size': 10,  # ビームサイズを10に増やして精度向上（デフォルト: 5）
                 'best_of': 5,  # 5つの候補から最良のものを選択
-                'temperature': 0.0,  # 確定的な出力（デフォルト: 0）
+                'temperature': 0.2,  # 0.0→0.2に変更（より自然な認識）
                 'condition_on_previous_text': True,  # 前のテキストを条件として使用
                 'compression_ratio_threshold': 2.4,  # ハルシネーション検出の閾値
                 'log_prob_threshold': -1.0,  # 低確率セグメントの閾値
                 'no_speech_threshold': 0.6,  # 無音判定の閾値
+                'initial_prompt': initial_prompt,  # 言語コンテキストを提供
+                'word_timestamps': False,  # 単語レベルのタイムスタンプは不要
             }
-
-            # initial_promptは削除（出力に含まれてしまうため）
 
             segments, info = self.model.transcribe(audio_data, **transcribe_params)
 
