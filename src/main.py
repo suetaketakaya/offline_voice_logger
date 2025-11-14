@@ -719,34 +719,54 @@ class OfflineVoiceLoggerApp:
                 # セグメントを追加（重複を防ぐ）
                 new_segments = []
                 for segment in result['segments']:
-                    # 重複チェック: 同じテキストと時刻のセグメントを除外
+                    # 重複チェック: 同じテキストを除外
+                    # 1. テキストが完全一致する場合は時刻に関わらず除外
+                    # 2. 最近30秒以内に同じテキストがあれば除外（ハルシネーション対策）
                     is_duplicate = False
-                    for existing in self.transcription_segments:
-                        # テキストが同じで、時刻が1.0秒以内の差の場合は重複とみなす
-                        if (existing['text'].strip() == segment['text'].strip() and
-                            abs(existing['start'] - segment['start']) < 1.0):
-                            is_duplicate = True
-                            logger.debug(f"重複セグメントをスキップ: {segment['text'][:30]}...")
-                            break
+                    segment_text = segment['text'].strip()
 
-                    # さらに、今回追加する新規セグメント内でも重複チェック
-                    for new_seg in new_segments:
-                        if (new_seg['text'].strip() == segment['text'].strip() and
-                            abs(new_seg['start'] - segment['start']) < 1.0):
-                            is_duplicate = True
-                            logger.debug(f"新規セグメント内で重複をスキップ: {segment['text'][:30]}...")
-                            break
+                    # 空のテキストは除外
+                    if not segment_text or len(segment_text) < 2:
+                        is_duplicate = True
+                        logger.debug(f"空または短すぎるセグメントをスキップ")
 
                     if not is_duplicate:
-                        new_segments.append(segment)
-                        self.transcription_segments.append(segment)
+                        for existing in self.transcription_segments:
+                            existing_text = existing['text'].strip()
+                            time_diff = abs(existing['start'] - segment['start'])
 
-                # 新規セグメントをタイムスタンプ順にソートしてGUI表示
-                new_segments.sort(key=lambda x: x['start'])
-                for segment in new_segments:
-                    # GUI更新
-                    timestamp = self._format_timestamp(segment['start'])
-                    self.window.add_transcription_text(segment['text'], timestamp)
+                            # 同じテキストが30秒以内にある場合は重複とみなす
+                            if existing_text == segment_text and time_diff < 30.0:
+                                is_duplicate = True
+                                logger.debug(f"重複セグメントをスキップ (時刻差={time_diff:.1f}秒): {segment_text[:30]}...")
+                                break
+
+                    # 今回追加する新規セグメント内でも重複チェック
+                    if not is_duplicate:
+                        for new_seg in new_segments:
+                            if new_seg['text'].strip() == segment_text:
+                                is_duplicate = True
+                                logger.debug(f"新規セグメント内で重複をスキップ: {segment_text[:30]}...")
+                                break
+
+                    if not is_duplicate:
+                        # セグメントリストに挿入ソートで追加（常にソート済み状態を維持）
+                        insert_pos = len(self.transcription_segments)
+                        for i, existing in enumerate(self.transcription_segments):
+                            if segment['start'] < existing['start']:
+                                insert_pos = i
+                                break
+
+                        self.transcription_segments.insert(insert_pos, segment)
+                        new_segments.append(segment)
+
+                # GUIを完全に再構築（常に時系列順を保証）
+                if new_segments:
+                    # 表示をクリアして全て再構築
+                    self.window.transcription_text.clear()
+                    for seg in self.transcription_segments:
+                        timestamp = self._format_timestamp(seg['start'])
+                        self.window.add_transcription_text(seg['text'], timestamp)
 
         except queue.Empty:
             pass

@@ -210,10 +210,10 @@ class Transcriber:
                 'beam_size': 5,  # ビームサイズ（デフォルト: 5）
                 'best_of': 5,  # 5つの候補から最良のものを選択
                 'temperature': 0.0,  # 確定的な認識（ハルシネーション抑制）
-                'condition_on_previous_text': True,  # 前のテキストを条件として使用
+                'condition_on_previous_text': False,  # 前のテキストに依存しない（ハルシネーション抑制）
                 'compression_ratio_threshold': 2.4,  # ハルシネーション検出の閾値
                 'log_prob_threshold': -1.0,  # 低確率セグメントの閾値
-                'no_speech_threshold': 0.6,  # 無音判定の閾値
+                'no_speech_threshold': 0.8,  # 無音判定の閾値（0.6→0.8に上げて厳しく）
                 'initial_prompt': initial_prompt,  # 言語コンテキストを提供（自然な文章例）
                 'word_timestamps': False,  # 単語レベルのタイムスタンプは不要
             }
