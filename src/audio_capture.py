@@ -43,6 +43,8 @@ class AudioCapture:
         self.channels = channels
         self.buffer_size_seconds = buffer_size_seconds
         self.max_buffer_samples = sample_rate * buffer_size_seconds
+        # 最小バッファサイズ（5秒）- これ以上貯まったら文字起こし開始
+        self.min_buffer_samples = sample_rate * 5
 
         # 音声バッファ (dequeで効率的なFIFO)
         self.audio_buffer = collections.deque(maxlen=self.max_buffer_samples)
@@ -240,11 +242,12 @@ class AudioCapture:
         """文字起こし用の音声バッファを取得
 
         Returns:
-            np.ndarray or None: 音声データ (バッファサイズ分)
-                                バッファが満杯でない場合はNone
+            np.ndarray or None: 音声データ (最小5秒以上)
+                                バッファが最小サイズ未満の場合はNone
         """
         with self.buffer_lock:
-            if len(self.audio_buffer) >= self.max_buffer_samples:
+            # 最小バッファサイズ（5秒）以上貯まったら取得
+            if len(self.audio_buffer) >= self.min_buffer_samples:
                 # バッファから取得
                 audio_data = np.array(list(self.audio_buffer))
 

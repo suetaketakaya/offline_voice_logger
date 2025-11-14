@@ -698,13 +698,24 @@ class OfflineVoiceLoggerApp:
             while not self.result_queue.empty():
                 result = self.result_queue.get_nowait()
 
-                # セグメントを追加
+                # セグメントを追加（重複を防ぐ）
                 for segment in result['segments']:
-                    self.transcription_segments.append(segment)
+                    # 重複チェック: 同じテキストと時刻のセグメントを除外
+                    is_duplicate = False
+                    for existing in self.transcription_segments:
+                        # テキストが同じで、時刻が0.5秒以内の差の場合は重複とみなす
+                        if (existing['text'].strip() == segment['text'].strip() and
+                            abs(existing['start'] - segment['start']) < 0.5):
+                            is_duplicate = True
+                            logger.debug(f"重複セグメントをスキップ: {segment['text'][:30]}...")
+                            break
 
-                    # GUI更新
-                    timestamp = self._format_timestamp(segment['start'])
-                    self.window.add_transcription_text(segment['text'], timestamp)
+                    if not is_duplicate:
+                        self.transcription_segments.append(segment)
+
+                        # GUI更新
+                        timestamp = self._format_timestamp(segment['start'])
+                        self.window.add_transcription_text(segment['text'], timestamp)
 
         except queue.Empty:
             pass
