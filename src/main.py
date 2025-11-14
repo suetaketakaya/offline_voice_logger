@@ -78,6 +78,9 @@ class OfflineVoiceLoggerApp:
         # 録音開始時刻（実時刻表示用）
         self.recording_start_time = None
 
+        # 累積音声オフセット（秒）- 文字起こし済み音声の累積時間
+        self.audio_offset = 0.0
+
         # ファイル管理
         print("   3-5. ファイル管理初期化...")
         save_dir = self.config_mgr.get('Files', 'save_directory')
@@ -499,6 +502,9 @@ class OfflineVoiceLoggerApp:
             from datetime import datetime
             self.recording_start_time = datetime.now()
 
+            # 累積音声オフセットをリセット
+            self.audio_offset = 0.0
+
             # ワーカースレッドを先に起動
             self.transcription_thread = threading.Thread(
                 target=self.transcription_worker,
@@ -603,10 +609,17 @@ class OfflineVoiceLoggerApp:
                 audio_buffer = self.audio_capture.get_audio_buffer()
 
                 if audio_buffer is not None:
-                    # キューに追加
+                    # 現在のオフセットを保存
+                    current_offset = self.audio_offset
+
+                    # オフセットを更新（このバッファの長さ分進める）
+                    buffer_duration = len(audio_buffer) / self.audio_capture.sample_rate
+                    self.audio_offset += buffer_duration
+
+                    # キューに追加（音声データとオフセットのタプル）
                     try:
-                        self.audio_queue.put(audio_buffer, timeout=1)
-                        logger.debug(f"音声バッファをキューに追加: {len(audio_buffer)}サンプル")
+                        self.audio_queue.put((audio_buffer, current_offset), timeout=1)
+                        logger.debug(f"音声バッファをキューに追加: {len(audio_buffer)}サンプル, オフセット={current_offset:.2f}秒")
                     except queue.Full:
                         logger.warning("音声キューが満杯です")
 
@@ -624,14 +637,14 @@ class OfflineVoiceLoggerApp:
 
         while self.is_running:
             try:
-                # キューから音声データ取得
+                # キューから音声データとオフセットを取得
                 try:
-                    audio_data = self.audio_queue.get(timeout=1)
+                    audio_data, offset = self.audio_queue.get(timeout=1)
                 except queue.Empty:
                     continue
 
-                print("[文字起こしスレッド] 音声データ受信 - 処理開始")
-                logger.info("文字起こし処理開始...")
+                print(f"[文字起こしスレッド] 音声データ受信 (オフセット={offset:.2f}秒) - 処理開始")
+                logger.info(f"文字起こし処理開始 (オフセット={offset:.2f}秒)...")
 
                 # transcriberがNoneでないことを確認
                 if self.transcriber is None:
@@ -646,6 +659,11 @@ class OfflineVoiceLoggerApp:
                 # 文字起こし実行
                 result = self.transcriber.transcribe(audio_data, language)
                 print(f"[文字起こしスレッド] 文字起こし完了")
+
+                # セグメントのタイムスタンプにオフセットを追加
+                for segment in result['segments']:
+                    segment['start'] += offset
+                    segment['end'] += offset
 
                 # 結果をキューに追加
                 self.result_queue.put(result)
